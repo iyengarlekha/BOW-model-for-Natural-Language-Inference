@@ -1,16 +1,12 @@
-import torch
-import pandas as pd
-import spacy
 from collections import Counter
 import datetime
 import io
-import random
-
+from tqdm import tqdm
 import numpy as np
+import pandas as pd
+
 import torch
 from torch.utils.data import Dataset
-
-import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -20,7 +16,11 @@ UNK_IDX = 1
 MAX_SENTENCE_LENGTH = 30
 
 def prepare_data(data):
-    '''split by space, map labels to int
+    '''Split sentences by space and map labels to int
+    data: pd.DataFrame
+    
+    Return:
+    df: pd.DataFrame
     '''
     df = data.copy()
     df['label'] = df['label'].map({'contradiction': 0, 'neutral': 1, 'entailment': 2})
@@ -28,9 +28,10 @@ def prepare_data(data):
     df['sentence2'] = df['sentence2'].str.split()
     return df
 
-from tqdm import tqdm
 def load_vectors(f_name, vocabulary):
-    # code taken from https://fasttext.cc/docs/en/english-vectors.html
+    '''Load vectors from .vec file
+    code taken from https://fasttext.cc/docs/en/english-vectors.html
+    '''
     f_in = io.open(f_name, 'r', encoding='utf-8', newline='\n', errors='ignore')
     n, d = map(int, f_in.readline().split())
     vectors = {}
@@ -41,10 +42,11 @@ def load_vectors(f_name, vocabulary):
     return vectors
 
 def build_vocabulary(train_data, vector_path, vocab_size):
-    '''
+    '''Build vocabulary from training data and pre-trained vectors, constrained by vocab size.
     Returns:
     id2token: list of tokens, where id2token[i] returns token that corresponds to token i
     token2id: dictionary where keys represent tokens and corresponding values represent indices
+    vectors: dict with tokens as keys, vectors as values
     '''
     print('Building vocabulary... ', end='', flush=True)
     all_tokens = []
@@ -64,7 +66,7 @@ def build_vocabulary(train_data, vector_path, vocab_size):
     return token2id, id2token, vectors
 
 def token2index_dataset(tokens_data, token2id):
-    '''turn tokens into indices
+    '''Turn tokens into indices
     tokens_data: pd.DataFrame, with sentence1 and sentence2 columns consist of tokenized data
                                and label column containing target value
     Returns:
@@ -81,8 +83,7 @@ def token2index_dataset(tokens_data, token2id):
     return all_indices_data, tokens_data.label.to_list()
 
 class SNLIDataset(Dataset):
-    """
-    Class that represents a train/validation/test dataset that's readable for PyTorch
+    """Class that represents a train/validation/test dataset that's readable for PyTorch
     Note that this class inherits torch.utils.data.Dataset
     """
     def __init__(self, data, target):
@@ -110,8 +111,7 @@ class SNLIDataset(Dataset):
         return [token_idx_1, len(token_idx_1), token_idx_2, len(token_idx_2), label]
     
 def SNLI_collate_func(batch):
-    """
-    Customized function for DataLoader that dynamically pads the batch so that all 
+    """Customized function for DataLoader that dynamically pads the batch so that all 
     data have the same length
     """
     x1_list = []
@@ -139,12 +139,22 @@ def SNLI_collate_func(batch):
             torch.LongTensor(label_list)]
 
 def create_weights(vectors, id2token):
+    '''Create weights metrics from vectors and id2token
+    Returns:
+    weights_matrix: torch.Tensor, dimension of (vocab size x embedding dim)
+    '''
     weights_matrix = torch.from_numpy(np.array([vectors[id2token[i]] for i in range(2, len(id2token))]))
     zero = torch.zeros(2, weights_matrix.size()[1], dtype=torch.float64)
     weights_matrix = torch.cat([zero, weights_matrix])
     return weights_matrix
 
 def create_emb_layer(weights_matrix, non_trainable=False):
+    '''Create embedding layer that's used in a PyTorch model
+    Returns:
+    emb_layer: nn.Embedding()
+    num_embeddings: int
+    embedding_dim: int
+    '''
     num_embeddings, embedding_dim = weights_matrix.size()
     emb_layer = nn.Embedding(num_embeddings, embedding_dim)
     emb_layer.load_state_dict({'weight': weights_matrix})
