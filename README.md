@@ -1,6 +1,7 @@
 # NLP_Fall2019_Assignment1
 
 Working records:
+
 09/13/2019:
 Contributor: Ying
 1. Finished token-index conversion
