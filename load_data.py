@@ -65,7 +65,7 @@ def build_vocabulary(train_data, vector_path, vocab_size):
     token2id['<unk>'] = UNK_IDX
     return token2id, id2token, vectors
 
-def token2index_dataset(tokens_data, token2id):
+def token2index_dataset(tokens_data, token2id, max_length = 30):
     '''Turn tokens into indices
     tokens_data: pd.DataFrame, with sentence1 and sentence2 columns consist of tokenized data
                                and label column containing target value
@@ -75,12 +75,12 @@ def token2index_dataset(tokens_data, token2id):
     all_indices_data = {'sentence1':[],'sentence2':[]}
     for col in all_indices_data.keys():
         indices_data = []
-        for tokens in tokens_data[col].to_list():
+        for tokens in tokens_data[col].tolist():
             index_list = [token2id[token] if token in token2id else UNK_IDX 
-                          for i, token in enumerate(tokens) if i < MAX_SENTENCE_LENGTH]
+                          for i, token in enumerate(tokens) if i < max_length]
             indices_data.append(index_list)
         all_indices_data[col] = indices_data
-    return all_indices_data, tokens_data.label.to_list()
+    return all_indices_data, tokens_data.label.tolist()
 
 class SNLIDataset(Dataset):
     """Class that represents a train/validation/test dataset that's readable for PyTorch
