@@ -16,3 +16,7 @@ Averaging: .50
 2. Finished 2-layer fully connected neural net with baseline accuracies (no hyperparameter tuning):
 Concatenation: .66
 Averaging: .60
+
+09/14/2019
+Contributor: Cody
+1) Created function to train models and track performance.
