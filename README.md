@@ -6,6 +6,7 @@ Working records:
 Contributor: Ying
 1. Finished token-index conversion
 2. Finished dataloader
+3. Created word representations with pre-trained word embeddings
 
 09/14/2019:
 Contributor: Howard
