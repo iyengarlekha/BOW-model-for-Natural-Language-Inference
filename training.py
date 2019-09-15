@@ -22,6 +22,15 @@ def acc(loader, model):
 
 # TODO add save locations
 def train_model(model, train_loader, val_loader, optimizer, criterion, n_epochs=10, save_file='model.pt'):
+    """
+    Train model and save best model based on validation performance
+    @param: train_loader - data loader for training set
+    @param: val_loader - data loader for validation set
+    @param: optimizer - optimizer
+    @param: criterion - loss function
+    @param: n_epochs - number of epochs to train for
+    @param: save_file - path to save best model
+    """
     start = time.time()
     best_acc = 0
 
