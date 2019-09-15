@@ -29,6 +29,8 @@ def train_model(model, train_loader, val_loader, optimizer, criterion, n_epochs=
     @param: criterion - loss function
     @param: n_epochs - number of epochs to train for
     @param: save_file - path to save best model
+
+    Returns: (model, accuracy)
     """
     start = time.time()
     best_acc = 0
@@ -65,3 +67,7 @@ def train_model(model, train_loader, val_loader, optimizer, criterion, n_epochs=
             print("New best model found, saving at {}".format(save_file))
             torch.save(model.state_dict(), save_file)
         print()
+
+    # return the best model and its validation performance
+    model.load_state_dict(torch.load(save_file))
+    return model, best_acc
