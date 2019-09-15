@@ -20,7 +20,6 @@ def acc(loader, model):
     return (100 * correct / total)
 
 
-# TODO add save locations
 def train_model(model, train_loader, val_loader, optimizer, criterion, n_epochs=10, save_file='model.pt'):
     """
     Train model and save best model based on validation performance
