@@ -20,7 +20,7 @@ def acc(loader, model):
     return (100 * correct / total)
 
 
-def train_model(model, train_loader, val_loader, optimizer, criterion, n_epochs=10, save_file='model.pt'):
+def train_model(model, train_loader, val_loader, optimizer, criterion, n_epochs=10,save_file='model.pt'):
     """
     Train model and save best model based on validation performance
     @param: train_loader - data loader for training set
@@ -32,12 +32,13 @@ def train_model(model, train_loader, val_loader, optimizer, criterion, n_epochs=
 
     Returns: (model, accuracy)
     """
+    
     start = time.time()
     best_acc = 0
 
     for epoch in range(n_epochs):
         print("Starting epoch {}".format(epoch))
-
+        #sum_loss_training = 0.0
         # Iterate over train set
         for batch, (data_pre, len_pre, data_post, len_post, label) in enumerate(train_loader):
             model.train()
@@ -46,28 +47,28 @@ def train_model(model, train_loader, val_loader, optimizer, criterion, n_epochs=
             y_hat = model(data_pre, data_post, len_pre, len_post)
             
             loss = criterion(y_hat, label)
-            
+                        
             loss.backward()
             optimizer.step()
             
             if (batch+1) % 500 == 0:
                 model.eval()
                 val_acc = acc(val_loader, model)
-                print('Epoch: [{}/{}], Step: [{}/{}], Validation Acc: {}, Time: {} sec'.format( 
-                        epoch+1, n_epochs, batch+1, len(train_loader), val_acc, time.time()-start))
-
-
+                print('Epoch: [{}/{}], Step: [{}/{}],Training Loss: {}, Validation Acc: {}, Time: {} sec'.format(epoch+1, n_epochs, batch+1, len(train_loader), loss, val_acc, time.time()-start))
+    
         # Calculate validation performance
         model.eval()
+        train_acc = acc(train_loader, model)
         val_acc = acc(val_loader, model)
-        print('End of epoch {}, Validation Acc: {}, Time: {} sec'.format( 
-                epoch+1, val_acc, time.time()-start))
+        print('End of epoch {}, Training Acc: {},Validation Acc: {}, Time: {} sec'.format(
+                                                                         epoch+1, train_acc, val_acc, time.time()-start))
+
         if val_acc > best_acc:
             best_acc = val_acc
             print("New best model found, saving at {}".format(save_file))
             torch.save(model.state_dict(), save_file)
         print()
-
+    
     # return the best model and its validation performance
     model.load_state_dict(torch.load(save_file))
-    return model, best_acc
+    return model, train_acc, val_acc
