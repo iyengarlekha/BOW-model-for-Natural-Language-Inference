@@ -1,15 +1,16 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import numpy as np
 
 
 class LogisticRegression(nn.Module):
     '''
-    Logistic regression classification model
-    '''
+        Logistic regression classification model
+        '''
     def __init__(self, embed_layer, embed_dim, num_class, cat_mode='DIRECT'):
         super(LogisticRegression, self).__init__()
-
+        
         self.embed = embed_layer
         self.cat_model = cat_mode
         if cat_mode == 'DIRECT':
@@ -17,18 +18,22 @@ class LogisticRegression(nn.Module):
         else:
             self.linear = nn.Linear(embed_dim, num_class)
         self.init_weights()
-        
+    
     def forward(self, data_pre, data_post, len_pre, len_post):
         out_pre = self.embed(data_pre)
         out_pre = torch.sum(out_pre, dim=1)
         out_pre /= len_pre.view(len_pre.size()[0],1).expand_as(out_pre).float()
-
+        
         out_post = self.embed(data_post)
         out_post = torch.sum(out_post, dim=1)
         out_post /= len_post.view(len_post.size()[0],1).expand_as(out_post).float()
-
+        
         if self.cat_model == 'DIRECT':
-            out = torch.cat((out_pre, out_post), 1)  
+            out = torch.cat((out_pre, out_post), 1)
+        elif self.cat_model == 'MUL':
+            out = torch.mul(out_pre, out_post)
+        elif  self.cat_model == 'SUB':
+            out = torch.sub(out_pre, out_post)
         else:
             out = out_pre.add(out_post)
             out = torch.div(out, 2.0)
@@ -71,6 +76,10 @@ class NeuralNetwork(nn.Module):
 
         if self.cat_model == 'DIRECT':
             out = torch.cat((out_pre, out_post), 1)
+        elif  self.cat_model == 'MUL':
+            out = torch.mul(out_pre, out_post)
+        elif  self.cat_model == 'SUB':
+            out = torch.sub(out_pre, out_post)
         else:
             out = out_pre.add(out_post)
             out = torch.div(out,2)
@@ -86,3 +95,9 @@ class NeuralNetwork(nn.Module):
         nn.init.uniform_(self.linear1.bias)
         nn.init.xavier_normal_(self.linear2.weight)
         nn.init.uniform_(self.linear2.bias)
+
+
+def n_params(model):
+    model_parameters = filter(lambda p: p.requires_grad, model.parameters())
+    n = sum([np.prod(p.size()) for p in model_parameters])
+    return n
