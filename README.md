@@ -21,3 +21,7 @@ Averaging: .60
 09/14/2019
 Contributor: Cody
 1) Created function to train models and track performance.
+
+9/18/2019
+Contributer: Ying
+1) Created notebook to eval and finetune the best model using MNLI dataset
