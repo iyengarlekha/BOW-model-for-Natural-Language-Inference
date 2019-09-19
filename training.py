@@ -14,6 +14,16 @@ class TrainOutput:
         self.train_acc = train_acc
         self.val_acc = val_acc
         self.n_params = n_params
+        
+        
+def to_device(data_pre, len_pre, data_post, len_post, labels, device):
+    # Very annoying.... must be better way
+    data_pre = data_pre.to(device)
+    len_pre = len_pre.to(device)
+    data_post = data_post.to(device)
+    len_post = len_post.to(device)
+    labels = labels.to(device)
+    return data_pre, len_pre, data_post, len_post, labels
 
 
 def acc(loader, model):
@@ -23,8 +33,10 @@ def acc(loader, model):
     """
     correct = 0
     total = 0
+    device = next(model.parameters()).device
     with torch.no_grad():
         for data_pre, len_pre, data_post, len_post, labels in loader:
+            data_pre, len_pre, data_post, len_post, labels = to_device(data_pre, len_pre, data_post, len_post, labels, device)
             outputs = model(data_pre, data_post, len_pre, len_post)
             predicted = outputs.max(1, keepdim=True)[1]
             
@@ -40,8 +52,10 @@ def avg_loss(loader, model, criterion):
     """
     loss = 0
     n = 0
+    device = next(model.parameters()).device
     with torch.no_grad():
         for data_pre, len_pre, data_post, len_post, labels in loader:
+            data_pre, len_pre, data_post, len_post, labels = to_device(data_pre, len_pre, data_post, len_post, labels, device)
             outputs = model(data_pre, data_post, len_pre, len_post)
             loss += criterion(outputs, labels)
             n += labels.size(0)
@@ -69,26 +83,22 @@ def train_model(model, train_loader, val_loader, optimizer, criterion, n_epochs=
     if not device:
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-    model.to(device)
+    model = model.to(device)
 
     for epoch in range(n_epochs):
         print("Starting epoch {}".format(epoch))
         # Iterate over train set
-        for batch, (data_pre, len_pre, data_post, len_post, label) in enumerate(train_loader):
+        for batch, (data_pre, len_pre, data_post, len_post, labels) in enumerate(train_loader):
             
-            # I guess this is necessary...
-            data_pre.to(device)
-            len_pre.to(device)
-            data_post.to(device)
-            len_post.to(device)
-            label.to(device)
-
+            # Gross
+            data_pre, len_pre, data_post, len_post, labels = to_device(data_pre, len_pre, data_post, len_post, labels, device)
+            
             model.train()
             optimizer.zero_grad()
             
             y_hat = model(data_pre, data_post, len_pre, len_post)
             
-            loss = criterion(y_hat, label)
+            loss = criterion(y_hat, labels)
                         
             loss.backward()
             optimizer.step()
