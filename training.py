@@ -106,5 +106,5 @@ def train_model(model, train_loader, val_loader, optimizer, criterion, n_epochs=
     train_acc = acc(train_loader, model)
     val_acc = best_acc
     n_trainable_params = n_params(model)
-    res = TrainOutput(train_loss=train_loss, val_loss=val_loss, train_acc=train_acc, val_acc=val_acc, n_params=n_trainable_params)
+    res = TrainOutput(train_loss=train_loss.item(), val_loss=val_loss.item(), train_acc=train_acc, val_acc=val_acc, n_params=n_trainable_params)
     return res
