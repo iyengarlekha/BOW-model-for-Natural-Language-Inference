@@ -48,7 +48,7 @@ def avg_loss(loader, model, criterion):
     return loss / n
 
 
-def train_model(model, train_loader, val_loader, optimizer, criterion, n_epochs=10,save_file='model.pt'):
+def train_model(model, train_loader, val_loader, optimizer, criterion, n_epochs=10, save_file='model.pt', device=None):
     """
     Train model and save best model based on validation performance
     @param: train_loader - data loader for training set
@@ -57,6 +57,7 @@ def train_model(model, train_loader, val_loader, optimizer, criterion, n_epochs=
     @param: criterion - loss function
     @param: n_epochs - number of epochs to train for
     @param: save_file - path to save best model
+    @param: device - device to train model on, "cpu" or "cuda:0" or None
 
     Returns: TrainingOutput
     """
@@ -65,10 +66,23 @@ def train_model(model, train_loader, val_loader, optimizer, criterion, n_epochs=
     best_acc = 0
     best_loss = float('inf')
 
+    if not device:
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+    model.to(device)
+
     for epoch in range(n_epochs):
         print("Starting epoch {}".format(epoch))
         # Iterate over train set
         for batch, (data_pre, len_pre, data_post, len_post, label) in enumerate(train_loader):
+            
+            # I guess this is necessary...
+            data_pre.to(device)
+            len_pre.to(device)
+            data_post.to(device)
+            len_post.to(device)
+            label.to(device)
+
             model.train()
             optimizer.zero_grad()
             
