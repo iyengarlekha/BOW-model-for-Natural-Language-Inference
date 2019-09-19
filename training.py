@@ -2,6 +2,19 @@ import torch
 import numpy as np 
 import pandas as pd 
 import time
+from models import n_params
+
+class TrainOutput:
+    """
+    Container for training output
+    """
+    def __init__(self, train_loss, val_loss, train_acc, val_acc, n_params):
+        self.train_loss = train_loss
+        self.val_loss = val_loss
+        self.train_acc = train_acc
+        self.val_acc = val_acc
+        self.n_params = n_params
+
 
 def acc(loader, model):
     """
@@ -20,6 +33,21 @@ def acc(loader, model):
     return (100 * correct / total)
 
 
+def avg_loss(loader, model, criterion):
+    """
+    Calculate average loss on a dataset
+    @param: loader - data loader for the dataset to test against
+    """
+    loss = 0
+    n = 0
+    with torch.no_grad():
+        for data_pre, len_pre, data_post, len_post, labels in loader:
+            outputs = model(data_pre, data_post, len_pre, len_post)
+            loss += criterion(outputs, labels)
+            n += labels.size(0)
+    return loss / n
+
+
 def train_model(model, train_loader, val_loader, optimizer, criterion, n_epochs=10,save_file='model.pt'):
     """
     Train model and save best model based on validation performance
@@ -30,15 +58,15 @@ def train_model(model, train_loader, val_loader, optimizer, criterion, n_epochs=
     @param: n_epochs - number of epochs to train for
     @param: save_file - path to save best model
 
-    Returns: (model, accuracy)
+    Returns: TrainingOutput
     """
     
     start = time.time()
     best_acc = 0
+    best_loss = float('inf')
 
     for epoch in range(n_epochs):
         print("Starting epoch {}".format(epoch))
-        #sum_loss_training = 0.0
         # Iterate over train set
         for batch, (data_pre, len_pre, data_post, len_post, label) in enumerate(train_loader):
             model.train()
@@ -71,4 +99,12 @@ def train_model(model, train_loader, val_loader, optimizer, criterion, n_epochs=
     
     # return the best model and its validation performance
     model.load_state_dict(torch.load(save_file))
-    return model, train_acc, val_acc
+
+    # Inefficiently calculate metrics separately....
+    train_loss = avg_loss(train_loader, model, criterion)
+    val_loss = avg_loss(val_loader, model, criterion)
+    train_acc = acc(train_loader, model)
+    val_acc = best_acc
+    n_trainable_params = n_params(model)
+    res = TrainOutput(train_loss=train_loss, val_loss=val_loss, train_acc=train_acc, val_acc=val_acc, n_params=n_trainable_params)
+    return res
