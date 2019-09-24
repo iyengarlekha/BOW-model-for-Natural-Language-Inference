@@ -37,7 +37,7 @@ def acc(loader, model):
     with torch.no_grad():
         for data_pre, len_pre, data_post, len_post, labels in loader:
             data_pre, len_pre, data_post, len_post, labels = to_device(data_pre, len_pre, data_post, len_post, labels, device)
-            outputs = model(data_pre, data_post, len_pre, len_post)
+            outputs = model(data_pre, len_pre, data_post, len_post)
             predicted = outputs.max(1, keepdim=True)[1]
             
             total += labels.size(0)
@@ -56,7 +56,7 @@ def avg_loss(loader, model, criterion):
     with torch.no_grad():
         for data_pre, len_pre, data_post, len_post, labels in loader:
             data_pre, len_pre, data_post, len_post, labels = to_device(data_pre, len_pre, data_post, len_post, labels, device)
-            outputs = model(data_pre, data_post, len_pre, len_post)
+            outputs = model(data_pre, len_pre, data_post, len_post)
             loss += criterion(outputs, labels)
             n += labels.size(0)
     return loss / n
@@ -96,7 +96,7 @@ def train_model(model, train_loader, val_loader, optimizer, criterion, n_epochs=
             model.train()
             optimizer.zero_grad()
             
-            y_hat = model(data_pre, data_post, len_pre, len_post)
+            y_hat = model(data_pre, len_pre, data_post, len_post)
             
             loss = criterion(y_hat, labels)
                         
@@ -106,13 +106,13 @@ def train_model(model, train_loader, val_loader, optimizer, criterion, n_epochs=
             if (batch+1) % 500 == 0:
                 model.eval()
                 val_acc = acc(val_loader, model)
-                print('Epoch: [{}/{}], Step: [{}/{}],Training Loss: {}, Validation Acc: {}, Time: {} sec'.format(epoch+1, n_epochs, batch+1, len(train_loader), loss, val_acc, time.time()-start))
+                print('Epoch: [{}/{}], Step: [{}/{}], Training Loss: {}, Validation Acc: {}, Time: {} sec'.format(epoch+1, n_epochs, batch+1, len(train_loader), loss, val_acc, time.time()-start))
     
         # Calculate validation performance
         model.eval()
         train_acc = acc(train_loader, model)
         val_acc = acc(val_loader, model)
-        print('End of epoch {}, Training Acc: {},Validation Acc: {}, Time: {} sec'.format(
+        print('End of epoch {}, Training Acc: {}, Validation Acc: {}, Time: {} sec'.format(
                                                                          epoch+1, train_acc, val_acc, time.time()-start))
 
         if val_acc > best_acc:
